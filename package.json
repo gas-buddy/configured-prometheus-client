@@ -1,0 +1,37 @@
+{
+  "name": "@gasbuddy/configured-prometheus-client",
+  "version": "1.0.0",
+  "description": "A configuration driven prometheus client",
+  "main": "build/index.js",
+  "scripts": {
+    "test": "tap --node-arg=-r --node-arg=babel-register tests/*.js",
+    "test-some": "tap --node-arg=-r --node-arg=babel-register",
+    "cover": "nyc --reporter=lcov npm test",
+    "lint": "eslint .",
+    "build": "babel src --out-dir build",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:gas-buddy/gb-services.git/configured-prometheus-client.git"
+  },
+  "keywords": [
+    "etcd",
+    "gasbuddy"
+  ],
+  "author": "GasBuddy",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.4.5",
+    "babel-preset-gasbuddy": "^1",
+    "bluebird": "^3.2.1",
+    "eslint": "^3.1.0",
+    "eslint-config-gasbuddy": "^1",
+    "tap": "^8.0.0",
+    "winston": "^2.3.0"
+  },
+  "dependencies": {
+    "express": "^4.14.0",
+    "prom-client": "^6.3.0"
+  }
+}
