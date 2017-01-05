@@ -18,6 +18,34 @@ export default class PrometheusClient {
 
     ['Counter', 'Gauge', 'Histogram', 'Summary']
       .forEach(p => (this[p] = this.client[p]));
+
+    // Make pre-configured items
+    if (opts.counters) {
+      this.counters = {};
+      for (const [name, config] of Object.entries(opts.counters)) {
+        this.counters[name] = new this.client.Counter(name, config.help, config.labels);
+      }
+    }
+    if (opts.gauges) {
+      this.gauges = {};
+      for (const [name, config] of Object.entries(opts.gauges)) {
+        this.gauges[name] = new this.client.Gauge(name, config.help, config.labels);
+      }
+    }
+    if (opts.histograms) {
+      this.hists = this.histograms = {};
+      for (const [name, config] of Object.entries(opts.histograms)) {
+        this.hists[name] = new this.client.Histogram(name, config.help, config.labels || [],
+          Object.assign({}, config.config, { buckets: config.buckets }));
+      }
+    }
+    if (opts.summaries) {
+      this.summaries = {};
+      for (const [name, config] of Object.entries(opts.summaries)) {
+        this.summaries[name] = new this.client.Summary(name, config.help, config.labels || [],
+          Object.assign({}, config.config, { percentiles: config.percentiles }));
+      }
+    }
   }
 
   start() {
@@ -30,5 +58,6 @@ export default class PrometheusClient {
 
   stop() {
     this.server.close();
+    delete this.server;
   }
 }
