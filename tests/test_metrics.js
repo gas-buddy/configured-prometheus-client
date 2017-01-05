@@ -1,4 +1,5 @@
 import tap from 'tap';
+import request from 'supertest';
 import PrometheusClient from '../src/index';
 
 let p;
@@ -8,6 +9,7 @@ tap.test('test_metrics', async (t) => {
     histograms: {
       TestHisto: {
         help: 'Test Histogram',
+        labels: ['foo', 'baz'],
         config: {
           buckets: [1, 2, 3, 4],
         },
@@ -38,6 +40,7 @@ tap.test('test_metrics', async (t) => {
 
   t.ok(p.counters, 'Should have preconfigured counters');
   t.ok(p.counters.TestCount, 'Should have specific counter');
+  p.counters.TestCount.inc(74);
 
   t.ok(p.gauges, 'Should have preconfigured gauges');
   t.ok(p.gauges.TestGauge, 'Should have specific gauge');
@@ -45,10 +48,46 @@ tap.test('test_metrics', async (t) => {
   t.ok(p.summaries, 'Should have preconfigured summaries');
   t.ok(p.summaries.TestSum, 'Should have specific summary');
 
-  const result = await p.start({});
-  t.strictEquals(result, p, 'Should return itself on start');
+  t.strictEquals(p.find('TestGauge'), p.gauges.TestGauge, 'should find a gauge');
+  t.strictEquals(p.find('TestHisto'), p.histograms.TestHisto, 'should find a histogram');
+  t.strictEquals(p.find('TestCount'), p.counters.TestCount, 'should find a counter');
+  t.strictEquals(p.find('TestSum'), p.summaries.TestSum, 'should find a summary');
+
+
+  const startResult = await p.start({});
+  t.strictEquals(startResult, p, 'Should return itself on start');
   t.ok(p.server, 'Metrics server should be running');
+
+  let timer = p.promiseTimer('TestHisto');
+  t.strictEquals(timer.metric, p.hists.TestHisto, 'Should find the metric');
+  t.strictEquals(timer.constructor.name, 'PromiseTimer', 'Should return a PromiseTimer');
+
+  const rz = await timer
+    .label({ foo: 'bar' })
+    .labelSuccess(result => ({ baz: result }))
+    .execute(new Promise(accept => setTimeout(() => accept('beep'), 50)));
+  t.strictEquals(rz, 'beep', 'Promise should resolve to original promise value');
+
+  timer = p.promiseTimer('TestHisto');
+  try {
+    await timer
+      .label({ foo: 'bust' })
+      .labelError(error => ({ baz: error.message }))
+      .execute(new Promise((accept, reject) =>
+        setTimeout(() => reject(new Error('bork')), 50)));
+    t.fail('Promise should throw');
+  } catch (error) {
+    t.strictEquals(error.message, 'bork', 'Promise should throw error');
+  }
+
+  const { text, status } = await request(p.app)
+    .get('/metrics');
+  t.strictEquals(status, 200, '/metrics should return 200 status');
 
   p.stop();
   t.ok(!p.server, 'Metrics server should not be running');
+
+  t.match(text, /TestCount 74/, 'Should have valid counter');
+  t.match(text, /TestHisto_bucket{le="5",baz="bork",foo="bust"} 1/, 'Should have an error metric');
+  t.match(text, /TestHisto_bucket{le="5",baz="beep",foo="bar"} 1/, 'Should have a success metric');
 });

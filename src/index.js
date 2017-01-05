@@ -1,4 +1,6 @@
+import assert from 'assert';
 import express from 'express';
+import PromiseTimer from './PromiseTimer';
 
 export default class PrometheusClient {
   constructor(context, opts) {
@@ -46,6 +48,44 @@ export default class PrometheusClient {
           Object.assign({}, config.config, { percentiles: config.percentiles }));
       }
     }
+  }
+
+  find(metricName) {
+    if (this.summaries && this.summaries[metricName]) {
+      return this.summaries[metricName];
+    }
+    if (this.histograms && this.histograms[metricName]) {
+      return this.histograms[metricName];
+    }
+    if (this.gauges && this.gauges[metricName]) {
+      return this.gauges[metricName];
+    }
+    if (this.counters && this.counters[metricName]) {
+      return this.counters[metricName];
+    }
+    return null;
+  }
+
+  /**
+   * Log a time value to a prometheus metric based on a promise.
+   * The returned object has the following methods:
+   *
+   *  Add some labels to the timer:
+   *    .label({ some: 'label' })
+   *
+   *  Add some labels that are based on the RESULT of the promise (or error):
+   *    .label((error, result) => ({ otherLabel: result.value }))
+   *
+   *  Return the promise and start the timer/execution:
+   *    .execute(someFunctionThatReturnsAPromise());
+   */
+  promiseTimer(metricNameOrInstance, labels) {
+    let metric = metricNameOrInstance;
+    if (typeof metricNameOrInstance === 'string') {
+      metric = this.find(metricNameOrInstance);
+    }
+    assert(metric, 'First argument to promiseTimer must be a metric instance or name of an already-configured metric');
+    return new PromiseTimer(metric, labels);
   }
 
   start() {

@@ -1,6 +1,6 @@
 {
   "name": "@gasbuddy/configured-prometheus-client",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A configuration driven prometheus client",
   "main": "build/index.js",
   "config": {
@@ -10,7 +10,7 @@
     "test": "tap --node-arg=-r --node-arg=babel-register tests/*.js",
     "test-some": "tap --node-arg=-r --node-arg=babel-register",
     "lint": "eslint .",
-    "cover": "cross-env BABEL_ENV=test nyc tap tests/test_*.js && nyc check-coverage $npm_package_config_coverage && nyc report --reporter=text",
+    "cover": "cross-env BABEL_ENV=test nyc tap tests/test_*.js && nyc check-coverage $npm_package_config_coverage",
     "ci-test": "cross-env NODE_ENV=test nyc tap -Rtap tests/test_*.js | tee .tap_output | tap -Rspec -",
     "ci-cover": "nyc check-coverage $npm_package_config_coverage",
     "build": "babel src --out-dir build",
@@ -32,6 +32,7 @@
     "cross-env": "^3.1.4",
     "eslint": "^3.1.0",
     "eslint-config-gasbuddy": "^1",
+    "supertest": "^2.0.1",
     "tap": "^7.0.0"
   },
   "dependencies": {
