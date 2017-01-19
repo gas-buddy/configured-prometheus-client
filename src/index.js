@@ -1,4 +1,3 @@
-import assert from 'assert';
 import express from 'express';
 import PromiseTimer from './PromiseTimer';
 
@@ -84,15 +83,23 @@ export default class PrometheusClient {
     if (typeof metricNameOrInstance === 'string') {
       metric = this.find(metricNameOrInstance);
     }
-    assert(metric, 'First argument to promiseTimer must be a metric instance or name of an already-configured metric');
     return new PromiseTimer(metric, labels);
   }
 
-  start() {
+  start(context) {
     this.app = express();
     this.app.get('/metrics', (req, res) =>
       res.end(this.client.register.metrics()));
-    this.server = this.app.listen(this.port);
+    try {
+      this.server = this.app.listen(this.port);
+    } catch (error) {
+      if (context.logger && context.logger.error) {
+        context.logger.error('Could not setup metrics server', error);
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('Could not setup metrics server', error);
+      }
+    }
     return this;
   }
 

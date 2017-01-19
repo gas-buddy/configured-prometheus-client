@@ -80,6 +80,13 @@ tap.test('test_metrics', async (t) => {
     t.strictEquals(error.message, 'bork', 'Promise should throw error');
   }
 
+  timer = p.promiseTimer();
+  const rznoMetric = await timer
+    .label({ foo: 'bar' })
+    .labelSuccess(result => ({ baz: result }))
+    .execute(new Promise(accept => setTimeout(() => accept('beep'), 50)));
+  t.strictEquals(rznoMetric, 'beep', 'Promise should resolve to original promise value');
+
   const { text, status } = await request(p.app)
     .get('/metrics');
   t.strictEquals(status, 200, '/metrics should return 200 status');

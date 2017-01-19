@@ -34,6 +34,12 @@ export default class PromiseTimer {
 
   async execute(promise) {
     const p = Promise.resolve(promise);
+
+    if (!this.metric) {
+      // This allows promiseTimer to work even when metrics are not being collected
+      return await p;
+    }
+
     const end = this.metric.startTimer(this.labels);
 
     let result;
