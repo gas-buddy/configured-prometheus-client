@@ -90,16 +90,16 @@ export default class PrometheusClient {
     this.app = express();
     this.app.get('/metrics', (req, res) =>
       res.end(this.client.register.metrics()));
-    try {
-      this.server = this.app.listen(this.port);
-    } catch (error) {
+
+    this.server = this.app.listen(this.port);
+    this.server.on('error', (error) => {
       if (context.logger && context.logger.error) {
         context.logger.error('Could not setup metrics server', error);
       } else {
         // eslint-disable-next-line no-console
         console.error('Could not setup metrics server', error);
       }
-    }
+    });
     return this;
   }
 
