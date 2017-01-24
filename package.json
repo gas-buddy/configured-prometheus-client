@@ -1,6 +1,6 @@
 {
   "name": "@gasbuddy/configured-prometheus-client",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A configuration driven prometheus client",
   "main": "build/index.js",
   "config": {
