@@ -4,7 +4,14 @@ import PrometheusClient from '../src/index';
 
 let p;
 
-tap.test('test_metrics', async (t) => {
+tap.test('disabled server', async (t) => {
+  const c = new PrometheusClient({}, { port: -1 });
+  await c.start({});
+  t.ok(c.server === undefined, 'Should not have a server');
+  await c.stop();
+});
+
+tap.test('real server', async (t) => {
   p = new PrometheusClient({}, {
     histograms: {
       TestHisto: {

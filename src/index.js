@@ -1,12 +1,41 @@
 import express from 'express';
 import PromiseTimer from './PromiseTimer';
 
+function listen(context, cp) {
+  if (cp.port < 0) {
+    if (context.logger && context.logger.info) {
+      context.logger.info('Metrics server disabled; metrics will not be available externally');
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('Metrics server disabled; metrics will not be available externally');
+    }
+    return;
+  }
+
+  cp.server = cp.app.listen(cp.port, () => {
+    if (context.logger && context.logger.info) {
+      context.logger.info('Metrics server listening', { port: cp.server.address().port });
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('Metrics server listening on', cp.server.address().port);
+    }
+  });
+  cp.server.on('error', (error) => {
+    if (context.logger && context.logger.error) {
+      context.logger.error('Could not setup metrics server', error);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('Could not setup metrics server', error);
+    }
+  });
+}
+
 export default class PrometheusClient {
   constructor(context, opts) {
     // eslint-disable-next-line global-require
     this.client = require('prom-client');
 
-    this.port = opts.port || 3000;
+    this.port = opts.port === 0 ? 0 : (opts.port || 3000);
     if (opts.defaultMetrics === false) {
       clearInterval(this.client.defaultMetrics());
       this.client.register.clear();
@@ -91,20 +120,14 @@ export default class PrometheusClient {
     this.app.get('/metrics', (req, res) =>
       res.end(this.client.register.metrics()));
 
-    this.server = this.app.listen(this.port);
-    this.server.on('error', (error) => {
-      if (context.logger && context.logger.error) {
-        context.logger.error('Could not setup metrics server', error);
-      } else {
-        // eslint-disable-next-line no-console
-        console.error('Could not setup metrics server', error);
-      }
-    });
+    listen(context, this);
     return this;
   }
 
   stop() {
-    this.server.close();
-    delete this.server;
+    if (this.server) {
+      this.server.close();
+      delete this.server;
+    }
   }
 }
