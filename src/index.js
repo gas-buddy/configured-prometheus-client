@@ -22,10 +22,10 @@ function listen(context, cp) {
   });
   cp.server.on('error', (error) => {
     if (context.logger && context.logger.error) {
-      context.logger.error('Could not setup metrics server', error);
+      context.logger.error('Could not setup metrics server', { error: error.message });
     } else {
       // eslint-disable-next-line no-console
-      console.error('Could not setup metrics server', error);
+      console.error('Could not setup metrics server', error.message);
     }
   });
 }
@@ -34,48 +34,52 @@ export default class PrometheusClient {
   constructor(context, opts) {
     // eslint-disable-next-line global-require
     this.client = require('prom-client');
+    const { Registry } = this.client;
+    this.register = new Registry();
 
     this.port = opts.port === 0 ? 0 : (opts.port || 3000);
-    if (opts.defaultMetrics === false) {
-      clearInterval(this.client.defaultMetrics());
-      this.client.register.clear();
-    } else if (opts.defaultMetrics) {
-      this.client.defaultMetrics(
-        opts.defaultMetrics.blacklist,
-        opts.defaultMetrics.interval || 10000,
-      );
+    if (opts.defaultMetrics) {
+      this.client.collectDefaultMetrics({
+        timeout: opts.defaultMetrics.interval,
+        register: this.register,
+      });
     }
 
     ['Counter', 'Gauge', 'Histogram', 'Summary']
-      .forEach(p => (this[p] = this.client[p]));
+      .forEach((p) => { this[p] = this.client[p]; });
 
     // Make pre-configured items
-    if (opts.counters) {
-      this.counters = {};
-      for (const [name, config] of Object.entries(opts.counters)) {
-        this.counters[name] = new this.client.Counter(name, config.help, config.labels);
-      }
+    this.counters = this.buildMetricsFromConfiguration(this.client.Counter, opts.counters);
+    this.gauges = this.buildMetricsFromConfiguration(this.client.Gauge, opts.gauges);
+    this.histograms = this.buildMetricsFromConfiguration(this.client.Histogram, opts.histograms);
+    this.hists = this.histograms;
+    this.summaries = this.buildMetricsFromConfiguration(this.client.Summary, opts.summaries);
+  }
+
+  buildMetricsFromConfiguration(MetricClass, configs) {
+    if (!configs) {
+      return undefined;
     }
-    if (opts.gauges) {
-      this.gauges = {};
-      for (const [name, config] of Object.entries(opts.gauges)) {
-        this.gauges[name] = new this.client.Gauge(name, config.help, config.labels);
+
+    const metrics = {};
+    for (const [name, config] of Object.entries(configs)) {
+      const { labels: labelNames = [], config: innerConfig = {}, ...restConfig } = config;
+      const finalConfig = {
+        labelNames,
+        name,
+        ...restConfig,
+        registers: [this.register],
+      };
+      // Old api allowed a "config" child with these things
+      if (innerConfig.buckets && !finalConfig.buckets) {
+        finalConfig.buckets = innerConfig.buckets;
       }
-    }
-    if (opts.histograms) {
-      this.hists = this.histograms = {};
-      for (const [name, config] of Object.entries(opts.histograms)) {
-        this.hists[name] = new this.client.Histogram(name, config.help, config.labels || [],
-          Object.assign({}, config.config, { buckets: config.buckets }));
+      if (innerConfig.percentiles && !finalConfig.percentiles) {
+        finalConfig.percentiles = innerConfig.percentiles;
       }
+      metrics[name] = new MetricClass(finalConfig);
     }
-    if (opts.summaries) {
-      this.summaries = {};
-      for (const [name, config] of Object.entries(opts.summaries)) {
-        this.summaries[name] = new this.client.Summary(name, config.help, config.labels || [],
-          Object.assign({}, config.config, { percentiles: config.percentiles }));
-      }
-    }
+    return metrics;
   }
 
   find(metricName) {
@@ -118,7 +122,7 @@ export default class PrometheusClient {
   start(context) {
     this.app = express();
     this.app.get('/metrics', (req, res) =>
-      res.end(this.client.register.metrics()));
+      res.end(this.register.metrics()));
 
     listen(context, this);
     return this;
@@ -129,5 +133,6 @@ export default class PrometheusClient {
       this.server.close();
       delete this.server;
     }
+    this.register.clear();
   }
 }

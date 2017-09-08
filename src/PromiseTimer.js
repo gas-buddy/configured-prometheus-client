@@ -37,7 +37,7 @@ export default class PromiseTimer {
 
     if (!this.metric) {
       // This allows promiseTimer to work even when metrics are not being collected
-      return await p;
+      return p;
     }
 
     const end = this.metric.startTimer(this.labels);
