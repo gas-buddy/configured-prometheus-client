@@ -12,7 +12,7 @@ tap.test('disabled server', async (t) => {
 });
 
 tap.test('real server', async (t) => {
-  p = new PrometheusClient({}, {
+  const metricConfig = {
     histograms: {
       TestHisto: {
         help: 'Test Histogram',
@@ -38,7 +38,8 @@ tap.test('real server', async (t) => {
         help: 'Test Summary',
       },
     },
-  });
+  };
+  p = new PrometheusClient({}, metricConfig);
   t.ok(p.Counter, 'Should have a Counter method');
 
   t.ok(p.histograms, 'Should have preconfigured histograms');
@@ -59,7 +60,6 @@ tap.test('real server', async (t) => {
   t.strictEquals(p.find('TestHisto'), p.histograms.TestHisto, 'should find a histogram');
   t.strictEquals(p.find('TestCount'), p.counters.TestCount, 'should find a counter');
   t.strictEquals(p.find('TestSum'), p.summaries.TestSum, 'should find a summary');
-
 
   const startResult = await p.start({});
   t.strictEquals(startResult, p, 'Should return itself on start');
@@ -98,10 +98,14 @@ tap.test('real server', async (t) => {
     .get('/metrics');
   t.strictEquals(status, 200, '/metrics should return 200 status');
 
+  t.ok(new PrometheusClient({}, metricConfig), 'Should allow a second instance before stop');
   p.stop();
   t.ok(!p.server, 'Metrics server should not be running');
 
   t.match(text, /TestCount 74/, 'Should have valid counter');
-  t.match(text, /TestHisto_bucket{le="5",baz="bork",foo="bust"} 1/, 'Should have an error metric');
-  t.match(text, /TestHisto_bucket{le="5",baz="beep",foo="bar"} 1/, 'Should have a success metric');
+  t.match(text, /TestHisto_bucket{le="5",foo="bust",baz="bork"} 1/, 'Should have an error metric');
+  t.match(text, /TestHisto_bucket{le="5",foo="bar",baz="beep"} 1/, 'Should have a success metric');
+
+  t.ok(new PrometheusClient({}, metricConfig), 'Should allow a second instance after stop');
+  // And, an inherent test - shouldn't keep node running without a stop
 });
