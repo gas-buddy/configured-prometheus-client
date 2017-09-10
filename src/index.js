@@ -49,14 +49,19 @@ function pmArgs(registers, hasFourArgs, args) {
     } else {
       obj = args[2] || {};
     }
-    return {
+    const finalArgs = {
       registers,
       name: args[0],
       help: args[1],
       labelNames: labels,
-      percentiles: obj.percentiles,
-      buckets: obj.buckets,
     };
+    if (obj.buckets) {
+      finalArgs.buckets = obj.buckets;
+    }
+    if (obj.percentiles) {
+      finalArgs.percentiles = obj.percentiles;
+    }
+    return finalArgs;
   }
   return {
     registers,
@@ -93,12 +98,12 @@ export default class PrometheusClient {
       }
     };
     this.Histogram = class Histogram extends this.client.Histogram {
-      constructor(args) {
+      constructor(...args) {
         super(pmArgs(registers, true, args));
       }
     };
     this.Summary = class Summary extends this.client.Summary {
-      constructor(args) {
+      constructor(...args) {
         super(pmArgs(registers, true, args));
       }
     };
