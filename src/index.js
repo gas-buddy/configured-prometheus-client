@@ -30,6 +30,42 @@ function listen(context, cp) {
   });
 }
 
+/**
+ * Implement some of the argument detection logic so we can muck with the registers
+ */
+function pmArgs(registers, hasFourArgs, args) {
+  if (typeof args[0] === 'object') {
+    return {
+      registers,
+      ...args[0],
+    };
+  } else if (hasFourArgs) {
+    let obj;
+    let labels = [];
+
+    if (Array.isArray(args[2])) {
+      obj = args[3] || {};
+      labels = args[2];
+    } else {
+      obj = args[2] || {};
+    }
+    return {
+      registers,
+      name: args[0],
+      help: args[1],
+      labelNames: labels,
+      percentiles: obj.percentiles,
+      buckets: obj.buckets,
+    };
+  }
+  return {
+    registers,
+    name: args[0],
+    help: args[1],
+    labelNames: args[2] || [],
+  };
+}
+
 export default class PrometheusClient {
   constructor(context, opts) {
     // eslint-disable-next-line global-require
@@ -45,8 +81,27 @@ export default class PrometheusClient {
       });
     }
 
-    ['Counter', 'Gauge', 'Histogram', 'Summary']
-      .forEach((p) => { this[p] = this.client[p]; });
+    const registers = [this.register];
+    this.Counter = class Counter extends this.client.Counter {
+      constructor(...args) {
+        super(pmArgs(registers, false, args));
+      }
+    };
+    this.Gauge = class Gauge extends this.client.Gauge {
+      constructor(...args) {
+        super(pmArgs(registers, false, args));
+      }
+    };
+    this.Histogram = class Histogram extends this.client.Histogram {
+      constructor(args) {
+        super(pmArgs(registers, true, args));
+      }
+    };
+    this.Summary = class Summary extends this.client.Summary {
+      constructor(args) {
+        super(pmArgs(registers, true, args));
+      }
+    };
 
     // Make pre-configured items
     this.counters = this.buildMetricsFromConfiguration(this.client.Counter, opts.counters);

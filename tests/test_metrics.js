@@ -94,6 +94,9 @@ tap.test('real server', async (t) => {
     .execute(new Promise(accept => setTimeout(() => accept('beep'), 50)));
   t.strictEquals(rznoMetric, 'beep', 'Promise should resolve to original promise value');
 
+  const counter = new p.Counter('dynamic_metric', 'Stuff');
+  counter.inc();
+
   const { text, status } = await request(p.app)
     .get('/metrics');
   t.strictEquals(status, 200, '/metrics should return 200 status');
@@ -102,6 +105,7 @@ tap.test('real server', async (t) => {
   p.stop();
   t.ok(!p.server, 'Metrics server should not be running');
 
+  t.match(text, /dynamic_metric/, 'Should have dynamic counter');
   t.match(text, /TestCount 74/, 'Should have valid counter');
   t.match(text, /TestHisto_bucket{le="5",foo="bust",baz="bork"} 1/, 'Should have an error metric');
   t.match(text, /TestHisto_bucket{le="5",foo="bar",baz="beep"} 1/, 'Should have a success metric');
