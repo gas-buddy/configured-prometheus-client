@@ -28,7 +28,7 @@
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-preset-gasbuddy": "^2.6.0",
+    "babel-preset-gasbuddy": "^3.0.0",
     "cross-env": "^5.0.5",
     "eslint-config-gasbuddy": "^4.0.0",
     "supertest": "^3.0.0",
