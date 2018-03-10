@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "express": "^4.15.4",
-    "prom-client": "^10.1.0"
+    "prom-client": "^11.0.0"
   },
   "nyc": {
     "include": [
