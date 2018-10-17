@@ -39,13 +39,14 @@ function pmArgs(registers, hasFourArgs, args) {
       registers,
       ...args[0],
     };
-  } else if (hasFourArgs) {
+  }
+  if (hasFourArgs) {
     let obj;
     let labels = [];
 
     if (Array.isArray(args[2])) {
       obj = args[3] || {};
-      labels = args[2];
+      [, , labels] = args;
     } else {
       obj = args[2] || {};
     }
@@ -181,8 +182,7 @@ export default class PrometheusClient {
 
   start(context) {
     this.app = express();
-    this.app.get('/metrics', (req, res) =>
-      res.end(this.register.metrics()));
+    this.app.get('/metrics', (req, res) => res.end(this.register.metrics()));
 
     listen(context, this);
     return this;

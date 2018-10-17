@@ -80,8 +80,7 @@ tap.test('real server', async (t) => {
     await timer
       .label({ foo: 'bust' })
       .labelError(error => ({ baz: error.message }))
-      .execute(new Promise((accept, reject) =>
-        setTimeout(() => reject(new Error('bork')), 50)));
+      .execute(new Promise((accept, reject) => setTimeout(() => reject(new Error('bork')), 50)));
     t.fail('Promise should throw');
   } catch (error) {
     t.strictEquals(error.message, 'bork', 'Promise should throw error');
