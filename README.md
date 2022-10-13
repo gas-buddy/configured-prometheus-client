@@ -1,9 +1,8 @@
 configured-prometheus-client
 ==========================
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/gas-buddy/configured-prometheus-client.svg)](https://greenkeeper.io/)
+> :warning: **This module is deprecated and no longer maintained**: GasBuddy uses OpenTelemetry now.
 
-[![wercker status](https://app.wercker.com/status/92c79256cd694bc9066f61d4d6503b82/s/master "wercker status")](https://app.wercker.com/project/byKey/92c79256cd694bc9066f61d4d6503b82)
 
 A small wrapper around the Prometheus client to allow configuration from JSON configuration or [hydration](https://github.com/gas-buddy/hydration).
 
